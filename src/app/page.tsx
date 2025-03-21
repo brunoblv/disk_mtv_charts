@@ -37,7 +37,7 @@ export default function MusicCharts() {
   return (
     <Container>
       <Typography level="h4" sx={{ mb: 2 }}>
-        Top 100 Albums
+        Last 7 Days Top 100 Albums
       </Typography>
       <Table>
         <thead>
