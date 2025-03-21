@@ -1,95 +1,80 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import Table from "@mui/joy/Table";
+import { Container, Typography, Skeleton } from "@mui/joy";
+
+interface Album {
+  album: string;
+  plays: number;
+}
+
+export default function MusicCharts() {
+  const [topAlbums, setTopAlbums] = useState<Album[] | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api", {
+          method: "GET",
+        });
+        if (!response.ok) {
+          throw new Error("Erro ao buscar os álbuns");
+        }
+        const data = await response.json();
+
+        // Limita os dados a 100 itens
+        const limitedData = data.slice(0, 100);
+        setTopAlbums(limitedData);
+      } catch (error) {
+        console.error("Erro ao buscar os álbuns:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+    <Container>
+      <Typography level="h4" sx={{ mb: 2 }}>
+        Top 100 Albums
+      </Typography>
+      <Table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Album</th>
+            <th>Plays</th>
+          </tr>
+        </thead>
+        <tbody>
+          {topAlbums === null ? (
+            // Exibe um esqueleto enquanto os dados são carregados
+            Array.from({ length: 10 }).map((_, index) => (
+              <tr key={index}>
+                <td>
+                  <Skeleton variant="text" />
+                </td>
+                <td>
+                  <Skeleton variant="text" />
+                </td>
+                <td>
+                  <Skeleton variant="text" />
+                </td>
+              </tr>
+            ))
+          ) : (
+            // Exibe os dados reais (limitados a 100 itens)
+            topAlbums.map((album, index) => (
+              <tr key={index}>
+                <td>{index + 1}</td>
+                <td>{album.album}</td>
+                <td>{album.plays}</td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </Table>
+    </Container>
   );
 }
