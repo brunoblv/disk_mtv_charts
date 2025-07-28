@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import styles from './Page.module.css'; // Importa os estilos do CSS Module
+import styles from './page.module.css'; // Importa os estilos do CSS Module
 
 export default function HomePage() {
   return (
