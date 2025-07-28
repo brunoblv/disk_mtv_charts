@@ -30,7 +30,7 @@ export default function MusicCharts() {
 
     try {
       const response = await fetch(
-        `/api?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
+        `/api/albums?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`,
         {
           method: "GET",
         }
