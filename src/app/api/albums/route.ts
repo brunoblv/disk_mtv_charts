@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const API_KEY = '4a9f5581a9cdf20a699f540ac52a95c9';
+const API_KEY = process.env.API_KEY;
 const USERS = [
   'blvbruno', 'romisk', 'rapha9095', 'Matheusygf', 'boofrnds', 'ohmymog_', 'LouLouFM2',
   'brn_4ever', 'alephunk', 'okpaulinho', 'lucas_SS', 'thecrazy_theus', 'flow__', 'hanamoyou',
-  'thiago-hbm', 'thunder__', 'Petter_HD', 'BriRy', 'Lukitoo', 'otiagoqz','GabeeTTS'
+  'thiago-hbm', 'thunder__', 'Petter_HD', 'BriRy', 'Lukitoo', 'otiagoqz','GabeeTTS', 'matttvieira'
 ];
 const MAX_PLAYS_PER_USER = 15;
 
