@@ -5,7 +5,7 @@ const API_KEY = process.env.API_KEY;
 const USERS = [
   'blvbruno', 'romisk', 'rapha9095', 'Matheusygf', 'boofrnds', 'ohmymog_', 'LouLouFM2',
   'brn_4ever', 'alephunk', 'okpaulinho', 'lucas_SS', 'thecrazy_theus', 'flow__', 'hanamoyou',
-  'thiago-hbm', 'thunder__', 'Petter_HD', 'BriRy', 'Lukitoo', 'otiagoqz','GabeeTTS', 'matttvieira'
+  'thiago-hbm', 'thunder__', 'Petter_HD', 'BriRy', 'Lukitoo', 'otiagoqz','GabeeTTS', 'matttvieira', 'adrenalinedame'
 ];
 const MAX_PLAYS_PER_USER = 15;
 
