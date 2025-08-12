@@ -25,7 +25,8 @@ const USERS = [
   "otiagoqz",
   "GabeeTTS",
   "matttvieira",
-  "adrenalinedame"
+  "adrenalinedame",
+  "soprani"
 ];
 const MAX_PLAYS_PER_USER = 7;
 
