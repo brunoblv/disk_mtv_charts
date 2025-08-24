@@ -26,10 +26,9 @@ const USERS = [
   "GabeeTTS",
   "matttvieira",
   "adrenalinedame",
-  "soprani"
+  "soprani",
 ];
 const MAX_PLAYS_PER_USER = 7;
-
 
 interface Track {
   artist: {
@@ -44,9 +43,15 @@ interface WeeklyTrackChart {
 }
 
 interface LastFmResponse {
-  weeklytrackchart: WeeklyTrackChart; // MUDOU
+  weeklytrackchart: WeeklyTrackChart;
 }
 
+interface TrackWithUserData {
+  rank: number;
+  song: string;
+  plays: number;
+  userPlays: { [key: string]: number };
+}
 
 async function fetchUserWeeklyTracks(
   username: string,
@@ -54,18 +59,15 @@ async function fetchUserWeeklyTracks(
   to: number
 ): Promise<Track[]> {
   try {
-    
     const url = `http://ws.audioscrobbler.com/2.0/?method=user.getweeklytrackchart&user=${username}&api_key=${API_KEY}&from=${from}&to=${to}&format=json`;
     const response = await axios.get<LastFmResponse>(url);
     console.log(`from: ${from} to: ${to}`);
 
-   
     if (!response.data.weeklytrackchart?.track) {
       console.warn(`Nenhuma música encontrada para ${username}`);
       return [];
     }
 
-   
     return response.data.weeklytrackchart.track;
   } catch (error) {
     console.error(`Erro ao buscar músicas de ${username}:`, error);
@@ -73,33 +75,43 @@ async function fetchUserWeeklyTracks(
   }
 }
 
-async function getCombinedRanking(from: number, to: number) {
-
+async function getCombinedRanking(
+  from: number,
+  to: number
+): Promise<TrackWithUserData[]> {
   const trackCounts = new Map<string, number>();
+  const userPlays = new Map<string, { [key: string]: number }>();
 
   for (const user of USERS) {
-    
     const tracks = await fetchUserWeeklyTracks(user, from, to);
 
-    
     for (const track of tracks) {
-      
       const trackName = `${track.artist["#text"]} - ${track.name}`;
       const plays = Math.min(parseInt(track.playcount, 10), MAX_PLAYS_PER_USER);
 
-     
+      // Atualiza o total de plays
       trackCounts.set(trackName, (trackCounts.get(trackName) || 0) + plays);
+
+      // Atualiza os plays por usuário
+      if (!userPlays.has(trackName)) {
+        userPlays.set(trackName, {});
+      }
+      const currentUserPlays = userPlays.get(trackName)!;
+      currentUserPlays[user] = plays;
     }
   }
 
-  
   const ranking = Array.from(trackCounts.entries())
     .sort(([, playsA], [, playsB]) => playsB - playsA)
-    .map(([name, plays], index) => ({ rank: index + 1, song: name, plays }));
+    .map(([name, plays], index) => ({
+      rank: index + 1,
+      song: name,
+      plays,
+      userPlays: userPlays.get(name) || {},
+    }));
 
   return ranking;
 }
-
 
 export async function GET(request: Request) {
   console.log("Recebida requisição na API");

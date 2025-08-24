@@ -1,17 +1,38 @@
-import { NextResponse } from 'next/server';
-import axios from 'axios';
+import { NextResponse } from "next/server";
+import axios from "axios";
 
 const API_KEY = process.env.API_KEY;
 const USERS = [
-  'blvbruno', 'romisk', 'rapha9095', 'Matheusygf', 'boofrnds', 'ohmymog_', 'LouLouFM2',
-  'brn_4ever', 'alephunk', 'okpaulinho', 'lucas_SS', 'thecrazy_theus', 'flow__', 'hanamoyou',
-  'thiago-hbm', 'thunder__', 'Petter_HD', 'BriRy', 'Lukitoo', 'otiagoqz','GabeeTTS', 'matttvieira', 'adrenalinedame', 'soprani'
+  "blvbruno",
+  "romisk",
+  "rapha9095",
+  "Matheusygf",
+  "boofrnds",
+  "ohmymog_",
+  "LouLouFM2",
+  "brn_4ever",
+  "alephunk",
+  "okpaulinho",
+  "lucas_SS",
+  "thecrazy_theus",
+  "flow__",
+  "hanamoyou",
+  "thiago-hbm",
+  "thunder__",
+  "Petter_HD",
+  "BriRy",
+  "Lukitoo",
+  "otiagoqz",
+  "GabeeTTS",
+  "matttvieira",
+  "adrenalinedame",
+  "soprani",
 ];
 const MAX_PLAYS_PER_USER = 15;
 
 interface Album {
   artist: {
-    '#text': string;
+    "#text": string;
   };
   name: string;
   playcount: string;
@@ -25,7 +46,18 @@ interface LastFmResponse {
   weeklyalbumchart: WeeklyAlbumChart;
 }
 
-async function fetchUserWeeklyAlbums(username: string, from: number, to: number): Promise<Album[]> {
+interface AlbumWithUserData {
+  rank: number;
+  album: string;
+  plays: number;
+  userPlays: { [key: string]: number };
+}
+
+async function fetchUserWeeklyAlbums(
+  username: string,
+  from: number,
+  to: number
+): Promise<Album[]> {
   try {
     const url = `http://ws.audioscrobbler.com/2.0/?method=user.getweeklyalbumchart&user=${username}&api_key=${API_KEY}&from=${from}&to=${to}&format=json`;
     const response = await axios.get<LastFmResponse>(url);
@@ -43,23 +75,40 @@ async function fetchUserWeeklyAlbums(username: string, from: number, to: number)
   }
 }
 
-async function getCombinedRanking(from: number, to: number) {
+async function getCombinedRanking(
+  from: number,
+  to: number
+): Promise<AlbumWithUserData[]> {
   const albumCounts = new Map<string, number>();
+  const userPlays = new Map<string, { [key: string]: number }>();
 
   for (const user of USERS) {
     const albums = await fetchUserWeeklyAlbums(user, from, to);
 
     for (const album of albums) {
-      const albumName = `${album.artist['#text']} - ${album.name}`;
+      const albumName = `${album.artist["#text"]} - ${album.name}`;
       const plays = Math.min(parseInt(album.playcount, 10), MAX_PLAYS_PER_USER);
 
+      // Atualiza o total de plays
       albumCounts.set(albumName, (albumCounts.get(albumName) || 0) + plays);
+
+      // Atualiza os plays por usuário
+      if (!userPlays.has(albumName)) {
+        userPlays.set(albumName, {});
+      }
+      const currentUserPlays = userPlays.get(albumName)!;
+      currentUserPlays[user] = plays;
     }
   }
 
   const ranking = Array.from(albumCounts.entries())
     .sort(([, playsA], [, playsB]) => playsB - playsA)
-    .map(([name, plays], index) => ({ rank: index + 1, album: name, plays }));
+    .map(([name, plays], index) => ({
+      rank: index + 1,
+      album: name,
+      plays,
+      userPlays: userPlays.get(name) || {},
+    }));
 
   return ranking;
 }
@@ -69,11 +118,14 @@ export async function GET(request: Request) {
 
   // Extrai os parâmetros da query string
   const { searchParams } = new URL(request.url);
-  const startDate = searchParams.get('startDate');
-  const endDate = searchParams.get('endDate');
+  const startDate = searchParams.get("startDate");
+  const endDate = searchParams.get("endDate");
 
   if (!startDate || !endDate) {
-    return NextResponse.json({ error: "Parâmetros 'startDate' e 'endDate' são obrigatórios" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Parâmetros 'startDate' e 'endDate' são obrigatórios" },
+      { status: 400 }
+    );
   }
 
   // Converte as datas para timestamps Unix
@@ -86,6 +138,9 @@ export async function GET(request: Request) {
     return NextResponse.json(ranking);
   } catch (error) {
     console.error("Erro na API:", error);
-    return NextResponse.json({ error: "Erro ao processar a requisição" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro ao processar a requisição" },
+      { status: 500 }
+    );
   }
 }
