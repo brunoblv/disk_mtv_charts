@@ -16,12 +16,12 @@ export default function HomePage() {
             Disk MTV - Last.fm Charts
           </h1>
           <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-            Compilação das músicas e álbuns mais executados pelos usuários do
-            grupo Disk MTV
+            Compilação das músicas, álbuns e artistas mais executados pelos
+            usuários do grupo Disk MTV
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {/* Card de Álbuns */}
           <Link href="/albums" className="group">
             <Card className="h-full transition-all duration-300 hover:shadow-xl hover:scale-105 border-0 bg-white/80 backdrop-blur-sm">
@@ -56,6 +56,25 @@ export default function HomePage() {
               <CardContent className="text-center">
                 <CardDescription className="text-slate-600 text-base">
                   Explore o ranking das músicas mais tocadas pelos usuários.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Card de Artistas */}
+          <Link href="/artists" className="group">
+            <Card className="h-full transition-all duration-300 hover:shadow-xl hover:scale-105 border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center text-2xl text-white">
+                  🎤
+                </div>
+                <CardTitle className="text-2xl text-slate-900">
+                  Ranking de Artistas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <CardDescription className="text-slate-600 text-base">
+                  Descubra os artistas mais ouvidos pelos usuários do grupo.
                 </CardDescription>
               </CardContent>
             </Card>
