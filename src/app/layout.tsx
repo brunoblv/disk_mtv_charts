@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { Music, Disc3, Home } from "lucide-react";
+import { Music, Disc3, Home, Mic2 } from "lucide-react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -60,6 +60,13 @@ export default function RootLayout({
                 >
                   <Music className="w-4 h-4" />
                   <span>Músicas</span>
+                </Link>
+                <Link
+                  href="/artists"
+                  className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <Mic2 className="w-4 h-4" />
+                  <span>Artistas</span>
                 </Link>
               </div>
             </div>
