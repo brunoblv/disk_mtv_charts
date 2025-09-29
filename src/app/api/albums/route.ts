@@ -16,7 +16,7 @@ const USERS = [
   "lucas_SS",
   "thecrazy_theus",
   "flow__",
-  "hanamoyou",
+  "renaimusou",
   "thiago-hbm",
   "thunder__",
   "Petter_HD",
