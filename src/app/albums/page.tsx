@@ -18,6 +18,7 @@ interface Album {
   rank: number;
   album: string;
   plays: number;
+  score: number;
   userPlays: { [key: string]: number };
 }
 
@@ -138,6 +139,7 @@ export default function AlbumsPage() {
                   <TableHead className="w-32 text-center">
                     Total Plays
                   </TableHead>
+                  <TableHead className="w-32 text-center">Score</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -167,11 +169,14 @@ export default function AlbumsPage() {
                       <TableCell className="text-center font-semibold text-blue-600">
                         {album.plays.toLocaleString()}
                       </TableCell>
+                      <TableCell className="text-center font-semibold text-purple-600">
+                        {album.score.toFixed(2)}
+                      </TableCell>
                     </TableRow>
 
                     {expandedRows.has(index) && (
                       <TableRow>
-                        <TableCell colSpan={4} className="p-0">
+                        <TableCell colSpan={5} className="p-0">
                           <div className="bg-slate-50 p-4 border-t">
                             <h4 className="font-medium text-slate-700 mb-3">
                               Plays por Usuário
