@@ -50,6 +50,7 @@ interface TrackWithUserData {
   rank: number;
   song: string;
   plays: number;
+  score: number;
   userPlays: { [key: string]: number };
 }
 
@@ -87,27 +88,63 @@ async function getCombinedRanking(
 
     for (const track of tracks) {
       const trackName = `${track.artist["#text"]} - ${track.name}`;
-      const plays = Math.min(parseInt(track.playcount, 10), MAX_PLAYS_PER_USER);
+      const plays = parseInt(track.playcount, 10);
 
-      // Atualiza o total de plays
-      trackCounts.set(trackName, (trackCounts.get(trackName) || 0) + plays);
-
-      // Atualiza os plays por usuário
+      // Atualiza os plays por usuário (soma se o usuário já tiver plays desta música)
       if (!userPlays.has(trackName)) {
         userPlays.set(trackName, {});
       }
       const currentUserPlays = userPlays.get(trackName)!;
-      currentUserPlays[user] = plays;
+      // Soma os plays em vez de substituir (para casos onde o usuário ouviu a mesma música múltiplas vezes)
+      currentUserPlays[user] = (currentUserPlays[user] || 0) + plays;
     }
   }
 
+  // Aplica o limite máximo por usuário e calcula os totais após processar todos os usuários
+  const trackScores = new Map<string, { plays: number; score: number }>();
+  // Preserva os valores originais de userPlays para exibição
+  const originalUserPlays = new Map<string, { [key: string]: number }>();
+
+  for (const [trackName, userPlaysData] of userPlays.entries()) {
+    // Cria uma cópia dos valores originais para exibição
+    const originalPlays: { [key: string]: number } = {};
+    for (const user in userPlaysData) {
+      originalPlays[user] = userPlaysData[user];
+    }
+    originalUserPlays.set(trackName, originalPlays);
+
+    let totalPlays = 0;
+    let numUsers = 0;
+
+    for (const user in userPlaysData) {
+      // Aplica o limite máximo por usuário apenas para o cálculo
+      const limitedPlays = Math.min(userPlaysData[user], MAX_PLAYS_PER_USER);
+      totalPlays += limitedPlays;
+      numUsers++;
+    }
+
+    // Calcula o score híbrido: (Total de plays × 0.8) + (Número de usuários × Multiplicador × 0.2)
+    const USER_MULTIPLIER = 20; // Multiplicador para o número de usuários
+    const score = totalPlays * 0.8 + numUsers * USER_MULTIPLIER * 0.2;
+
+    trackCounts.set(trackName, totalPlays);
+    trackScores.set(trackName, { plays: totalPlays, score });
+  }
+
   const ranking = Array.from(trackCounts.entries())
-    .sort(([, playsA], [, playsB]) => playsB - playsA)
-    .map(([name, plays], index) => ({
-      rank: index + 1,
-      song: name,
+    .map(([name, plays]) => ({
+      name,
       plays,
-      userPlays: userPlays.get(name) || {},
+      score: trackScores.get(name)?.score || 0,
+      userPlays: originalUserPlays.get(name) || {},
+    }))
+    .sort((a, b) => b.score - a.score) // Ordena por score em vez de plays
+    .map((item, index) => ({
+      rank: index + 1,
+      song: item.name,
+      plays: item.plays,
+      score: Math.round(item.score * 100) / 100, // Arredonda para 2 casas decimais
+      userPlays: item.userPlays,
     }));
 
   return ranking;

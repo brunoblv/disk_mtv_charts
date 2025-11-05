@@ -164,15 +164,23 @@ async function getCombinedRanking(
 
   // Aplica o limite máximo por usuário e calcula os totais após processar todos os usuários
   const albumScores = new Map<string, { plays: number; score: number }>();
+  // Preserva os valores originais de userPlays para exibição
+  const originalUserPlays = new Map<string, { [key: string]: number }>();
 
   for (const [albumName, userPlaysData] of userPlays.entries()) {
+    // Cria uma cópia dos valores originais para exibição
+    const originalPlays: { [key: string]: number } = {};
+    for (const user in userPlaysData) {
+      originalPlays[user] = userPlaysData[user];
+    }
+    originalUserPlays.set(albumName, originalPlays);
+
     let totalPlays = 0;
     let numUsers = 0;
 
     for (const user in userPlaysData) {
-      // Aplica o limite máximo por usuário
+      // Aplica o limite máximo por usuário apenas para o cálculo
       const limitedPlays = Math.min(userPlaysData[user], MAX_PLAYS_PER_USER);
-      userPlaysData[user] = limitedPlays;
       totalPlays += limitedPlays;
       numUsers++;
     }
@@ -190,7 +198,7 @@ async function getCombinedRanking(
       name,
       plays,
       score: albumScores.get(name)?.score || 0,
-      userPlays: userPlays.get(name) || {},
+      userPlays: originalUserPlays.get(name) || {},
     }))
     .sort((a, b) => b.score - a.score) // Ordena por score em vez de plays
     .map((item, index) => ({
