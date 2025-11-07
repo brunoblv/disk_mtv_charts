@@ -258,6 +258,7 @@ function normalizeAlbumName(albumName: string, artistName?: string): string {
     "Deluxe Experience Edition",
     "Extended Edition",
     "Deluxe Edition",
+    "Deluxe Version",
     "édition de luxe",
     "Special Edition",
     "20th Anniversary Edition",
