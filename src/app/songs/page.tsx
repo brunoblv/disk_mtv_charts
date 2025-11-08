@@ -18,7 +18,10 @@ interface Track {
   rank: number;
   song: string;
   plays: number;
+  score: number;
   userPlays: { [key: string]: number };
+  userScores: { [key: string]: number };
+  listenersBonus: number;
 }
 
 export default function SongsPage() {
@@ -136,6 +139,9 @@ export default function SongsPage() {
                   <TableHead className="w-32 text-center">
                     Total Plays
                   </TableHead>
+                  <TableHead className="w-32 text-center">
+                    Score
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -165,35 +171,70 @@ export default function SongsPage() {
                       <TableCell className="text-center font-semibold text-green-600">
                         {track.plays.toLocaleString()}
                       </TableCell>
+                      <TableCell className="text-center font-semibold text-purple-600">
+                        {track.score.toLocaleString()}
+                      </TableCell>
                     </TableRow>
 
                     {expandedRows.has(index) && (
                       <TableRow>
-                        <TableCell colSpan={4} className="p-0">
+                        <TableCell colSpan={5} className="p-0">
                           <div className="bg-slate-50 p-4 border-t">
+                            <div className="mb-4">
+                              <h4 className="font-medium text-slate-700 mb-2">
+                                Bônus por Ouvintes
+                              </h4>
+                              <div className="text-lg font-bold text-purple-600">
+                                +{track.listenersBonus.toLocaleString()} pontos
+                              </div>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {Object.keys(track.userPlays).length} ouvinte(s) × 20 × 0.2
+                              </p>
+                            </div>
                             <h4 className="font-medium text-slate-700 mb-3">
-                              Plays por Usuário
+                              Plays e Scores por Usuário
                             </h4>
                             {Object.keys(track.userPlays).length > 0 ? (
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {Object.entries(track.userPlays)
                                   .filter(([, plays]) => plays > 0)
                                   .sort(
                                     ([, playsA], [, playsB]) => playsB - playsA
                                   )
-                                  .map(([user, plays]) => (
-                                    <div
-                                      key={user}
-                                      className="bg-white rounded-lg p-3 border"
-                                    >
-                                      <div className="text-sm font-medium text-slate-600 capitalize">
-                                        {user}
+                                  .map(([user, plays]) => {
+                                    const userScore = track.userScores[user] || 0;
+                                    const limitedPlays = Math.min(plays, 7);
+                                    return (
+                                      <div
+                                        key={user}
+                                        className="bg-white rounded-lg p-4 border"
+                                      >
+                                        <div className="text-sm font-medium text-slate-600 capitalize mb-2">
+                                          {user}
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Plays:</span>
+                                            <span className="text-base font-bold text-green-600">
+                                              {plays}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Plays (limitados):</span>
+                                            <span className="text-sm text-slate-400">
+                                              {limitedPlays}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between items-center pt-1 border-t">
+                                            <span className="text-xs text-slate-500">Score:</span>
+                                            <span className="text-base font-bold text-purple-600">
+                                              {userScore.toLocaleString()}
+                                            </span>
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="text-lg font-bold text-green-600">
-                                        {plays}
-                                      </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                               </div>
                             ) : (
                               <p className="text-slate-500 text-center py-4">

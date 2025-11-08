@@ -18,7 +18,12 @@ interface Album {
   rank: number;
   album: string;
   plays: number;
+  score: number;
   userPlays: { [key: string]: number };
+  userScores: { [key: string]: number };
+  listenersBonus: number;
+  coverImage?: string;
+  albumType?: "album" | "ep" | "single";
 }
 
 export default function AlbumsPage() {
@@ -138,6 +143,7 @@ export default function AlbumsPage() {
                   <TableHead className="w-32 text-center">
                     Total Plays
                   </TableHead>
+                  <TableHead className="w-32 text-center">Score</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -161,41 +167,100 @@ export default function AlbumsPage() {
                       <TableCell className="text-center font-medium text-slate-600">
                         {index + 1}
                       </TableCell>
-                      <TableCell className="font-medium">
-                        {album.album}
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {album.coverImage ? (
+                            <img
+                              src={album.coverImage}
+                              alt={album.album}
+                              className="w-12 h-12 rounded object-cover flex-shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display =
+                                  "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded bg-slate-200 flex-shrink-0 flex items-center justify-center">
+                              <span className="text-xs text-slate-400">No</span>
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium">{album.album}</div>
+                            {album.albumType && album.albumType !== "single" && (
+                              <div className="text-xs text-slate-500 uppercase">
+                                {album.albumType}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center font-semibold text-blue-600">
                         {album.plays.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-center font-semibold text-purple-600">
+                        {album.score.toLocaleString()}
                       </TableCell>
                     </TableRow>
 
                     {expandedRows.has(index) && (
                       <TableRow>
-                        <TableCell colSpan={4} className="p-0">
+                        <TableCell colSpan={5} className="p-0">
                           <div className="bg-slate-50 p-4 border-t">
+                            <div className="mb-4">
+                              <h4 className="font-medium text-slate-700 mb-2">
+                                Bônus por Ouvintes
+                              </h4>
+                              <div className="text-lg font-bold text-purple-600">
+                                +{album.listenersBonus.toLocaleString()} pontos
+                              </div>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {Object.keys(album.userPlays).length} ouvinte(s) × 20 × 0.1
+                              </p>
+                            </div>
                             <h4 className="font-medium text-slate-700 mb-3">
-                              Plays por Usuário
+                              Plays e Scores por Usuário
                             </h4>
                             {Object.keys(album.userPlays).length > 0 ? (
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {Object.entries(album.userPlays)
                                   .filter(([, plays]) => plays > 0)
                                   .sort(
                                     ([, playsA], [, playsB]) => playsB - playsA
                                   )
-                                  .map(([user, plays]) => (
-                                    <div
-                                      key={user}
-                                      className="bg-white rounded-lg p-3 border"
-                                    >
-                                      <div className="text-sm font-medium text-slate-600 capitalize">
-                                        {user}
+                                  .map(([user, plays]) => {
+                                    const userScore = album.userScores[user] || 0;
+                                    const limitedPlays = Math.min(plays, 15);
+                                    return (
+                                      <div
+                                        key={user}
+                                        className="bg-white rounded-lg p-4 border"
+                                      >
+                                        <div className="text-sm font-medium text-slate-600 capitalize mb-2">
+                                          {user}
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Plays:</span>
+                                            <span className="text-base font-bold text-blue-600">
+                                              {plays}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Plays (limitados):</span>
+                                            <span className="text-sm text-slate-400">
+                                              {limitedPlays}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between items-center pt-1 border-t">
+                                            <span className="text-xs text-slate-500">Score:</span>
+                                            <span className="text-base font-bold text-purple-600">
+                                              {userScore.toLocaleString()}
+                                            </span>
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="text-lg font-bold text-blue-600">
-                                        {plays}
-                                      </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                               </div>
                             ) : (
                               <p className="text-slate-500 text-center py-4">

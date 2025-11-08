@@ -18,7 +18,11 @@ interface Artist {
   rank: number;
   artist: string;
   plays: number;
+  score: number;
   userPlays: { [key: string]: number };
+  userScores: { [key: string]: number };
+  listenersBonus: number;
+  image?: string;
 }
 
 export default function ArtistsPage() {
@@ -136,6 +140,9 @@ export default function ArtistsPage() {
                   <TableHead className="w-32 text-center">
                     Total Plays
                   </TableHead>
+                  <TableHead className="w-32 text-center">
+                    Score
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -160,40 +167,92 @@ export default function ArtistsPage() {
                         {artist.rank}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {artist.artist}
+                        <div className="flex items-center gap-3">
+                          {artist.image ? (
+                            <img
+                              src={artist.image}
+                              alt={artist.artist}
+                              className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
+                              onError={(e) => {
+                                // Se a imagem falhar ao carregar, esconde o elemento
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center border-2 border-slate-200">
+                              <Mic2 className="w-6 h-6 text-slate-500" />
+                            </div>
+                          )}
+                          <span>{artist.artist}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center font-semibold text-orange-600">
                         {artist.plays.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-center font-semibold text-purple-600">
+                        {artist.score.toLocaleString()}
                       </TableCell>
                     </TableRow>
 
                     {expandedRows.has(index) && (
                       <TableRow>
-                        <TableCell colSpan={4} className="p-0">
+                        <TableCell colSpan={5} className="p-0">
                           <div className="bg-slate-50 p-4 border-t">
+                            <div className="mb-4">
+                              <h4 className="font-medium text-slate-700 mb-2">
+                                Bônus por Ouvintes
+                              </h4>
+                              <div className="text-lg font-bold text-purple-600">
+                                +{artist.listenersBonus.toLocaleString()} pontos
+                              </div>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {Object.keys(artist.userPlays).length} ouvinte(s) × 20 × 0.2
+                              </p>
+                            </div>
                             <h4 className="font-medium text-slate-700 mb-3">
-                              Plays por Usuário
+                              Plays e Scores por Usuário
                             </h4>
                             {Object.keys(artist.userPlays).length > 0 ? (
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {Object.entries(artist.userPlays)
                                   .filter(([, plays]) => plays > 0)
                                   .sort(
                                     ([, playsA], [, playsB]) => playsB - playsA
                                   )
-                                  .map(([user, plays]) => (
-                                    <div
-                                      key={user}
-                                      className="bg-white rounded-lg p-3 border"
-                                    >
-                                      <div className="text-sm font-medium text-slate-600 capitalize">
-                                        {user}
+                                  .map(([user, plays]) => {
+                                    const userScore = artist.userScores[user] || 0;
+                                    const limitedPlays = Math.min(plays, 20);
+                                    return (
+                                      <div
+                                        key={user}
+                                        className="bg-white rounded-lg p-4 border"
+                                      >
+                                        <div className="text-sm font-medium text-slate-600 capitalize mb-2">
+                                          {user}
+                                        </div>
+                                        <div className="space-y-1">
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Plays:</span>
+                                            <span className="text-base font-bold text-orange-600">
+                                              {plays}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between items-center">
+                                            <span className="text-xs text-slate-500">Plays (limitados):</span>
+                                            <span className="text-sm text-slate-400">
+                                              {limitedPlays}
+                                            </span>
+                                          </div>
+                                          <div className="flex justify-between items-center pt-1 border-t">
+                                            <span className="text-xs text-slate-500">Score:</span>
+                                            <span className="text-base font-bold text-purple-600">
+                                              {userScore.toLocaleString()}
+                                            </span>
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="text-lg font-bold text-orange-600">
-                                        {plays}
-                                      </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                               </div>
                             ) : (
                               <p className="text-slate-500 text-center py-4">
