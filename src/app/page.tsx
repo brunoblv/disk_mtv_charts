@@ -9,39 +9,19 @@ import {
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8 pt-16">
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 sm:p-6 lg:p-8 pt-12 sm:pt-14 lg:pt-16">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-slate-900 mb-4">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-4 px-4">
             Disk MTV - Last.fm Charts
           </h1>
-          <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg lg:text-xl text-slate-600 max-w-2xl mx-auto px-4">
             Compilação das músicas, álbuns e artistas mais executados pelos
             usuários do grupo Disk MTV
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-          {/* Card de Músicas Ponderadas */}
-          <Link href="/top-weighted" className="group">
-            <Card className="h-full transition-all duration-300 hover:shadow-xl hover:scale-105 border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-2xl text-white">
-                  🏆
-                </div>
-                <CardTitle className="text-2xl text-slate-900">
-                  Top 100 Ponderado
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <CardDescription className="text-slate-600 text-base">
-                  Ranking ponderado das músicas com base nos últimos 7, 15 e 30
-                  dias.
-                </CardDescription>
-              </CardContent>
-            </Card>
-          </Link>
-
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-6xl mx-auto">
           {/* Card de Álbuns */}
           <Link href="/albums" className="group">
             <Card className="h-full transition-all duration-300 hover:shadow-xl hover:scale-105 border-0 bg-white/80 backdrop-blur-sm">
@@ -95,6 +75,26 @@ export default function HomePage() {
               <CardContent className="text-center">
                 <CardDescription className="text-slate-600 text-base">
                   Descubra os artistas mais ouvidos pelos usuários do grupo.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Card de Músicas Ponderadas */}
+          <Link href="/top-weighted" className="group">
+            <Card className="h-full transition-all duration-300 hover:shadow-xl hover:scale-105 border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-2xl text-white">
+                  🏆
+                </div>
+                <CardTitle className="text-2xl text-slate-900">
+                  Top 100 Ponderado
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <CardDescription className="text-slate-600 text-base">
+                  Ranking ponderado das músicas com base nos últimos 7, 15 e 30
+                  dias.
                 </CardDescription>
               </CardContent>
             </Card>
