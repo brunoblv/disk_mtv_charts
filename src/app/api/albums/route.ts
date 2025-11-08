@@ -66,6 +66,7 @@ interface AlbumWithUserData {
   listenersBonus: number;
   coverImage?: string;
   albumType?: "album" | "ep" | "single";
+  releaseDate?: string;
 }
 
 /**
@@ -122,6 +123,7 @@ async function getSpotifyToken(): Promise<string | null> {
 interface SpotifyAlbumInfo {
   coverImage?: string;
   albumType?: "album" | "ep" | "single";
+  releaseDate?: string; // Data de lançamento (formato: YYYY-MM-DD ou YYYY)
   found: boolean; // Indica se encontrou o álbum no Spotify
 }
 
@@ -211,10 +213,12 @@ async function searchSpotifyAlbum(
 
     const albumType = bestMatch.album_type as "album" | "ep" | "single";
     const coverImage = bestMatch.images?.[0]?.url || bestMatch.images?.[1]?.url;
+    const releaseDate = bestMatch.release_date; // Formato: YYYY-MM-DD ou YYYY
 
     return {
       coverImage: coverImage,
       albumType: albumType, // Retorna o tipo real (album, ep ou single)
+      releaseDate: releaseDate,
       found: true,
     };
   } catch (error: any) {
@@ -316,8 +320,11 @@ async function fetchUserWeeklyAlbums(
 
 async function getCombinedRanking(
   from: number,
-  to: number
+  to: number,
+  maxPlaysPerUser?: number
 ): Promise<AlbumWithUserData[]> {
+  // Usa o limite fornecido ou o padrão
+  const limit = maxPlaysPerUser ?? MAX_PLAYS_PER_USER;
   const albumCounts = new Map<string, number>();
   const userPlays = new Map<string, { [key: string]: number }>();
   const albumDisplayNames = new Map<string, string>(); // Armazena o nome de exibição original
@@ -381,7 +388,7 @@ async function getCombinedRanking(
 
     for (const user in userPlaysData) {
       // Aplica o limite máximo por usuário apenas para o cálculo
-      const limitedPlays = Math.min(userPlaysData[user], MAX_PLAYS_PER_USER);
+      const limitedPlays = Math.min(userPlaysData[user], limit);
       totalPlays += limitedPlays;
       // Calcula o score individual do usuário (plays limitados × 0.9) × 10
       userScores[user] = limitedPlays * 0.9 * 10;
@@ -483,6 +490,7 @@ async function getCombinedRanking(
         ...item,
         coverImage: spotifyInfo.coverImage,
         albumType: spotifyInfo.albumType,
+        releaseDate: spotifyInfo.releaseDate,
       };
     })
     // Filtra singles apenas se:
@@ -529,13 +537,22 @@ export async function GET(request: Request) {
 
   // Converte as datas para timestamps Unix
   // Data inicial: início do dia (00:00:00)
-  const from = Math.floor(new Date(startDate + "T00:00:00").getTime() / 1000);
+  const fromDate = new Date(startDate + "T00:00:00");
+  const toDate = new Date(endDate + "T23:59:59");
+  const from = Math.floor(fromDate.getTime() / 1000);
   // Data final: fim do dia (23:59:59) para incluir todos os plays do dia
-  const to = Math.floor(new Date(endDate + "T23:59:59").getTime() / 1000);
+  const to = Math.floor(toDate.getTime() / 1000);
+
+  // Calcula o número de dias entre as datas
+  const daysDiff = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Se o período for maior que 7 dias, usa limite de 300
+  // Se for 7 dias ou menos, usa o limite padrão de 15
+  const maxPlaysPerUser = daysDiff > 7 ? 300 : MAX_PLAYS_PER_USER;
 
   try {
-    const ranking = await getCombinedRanking(from, to);
-    console.log(`✅ Ranking: ${ranking.length} álbuns processados`);
+    const ranking = await getCombinedRanking(from, to, maxPlaysPerUser);
+    console.log(`✅ Ranking: ${ranking.length} álbuns processados (período: ${daysDiff} dias, limite: ${maxPlaysPerUser})`);
     return NextResponse.json(ranking);
   } catch (error) {
     console.error("Erro na API:", error);

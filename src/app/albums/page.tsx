@@ -24,11 +24,56 @@ interface Album {
   listenersBonus: number;
   coverImage?: string;
   albumType?: "album" | "ep" | "single";
+  releaseDate?: string;
 }
 
 export default function AlbumsPage() {
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  // Formata a data de lançamento
+  const formatReleaseDate = (dateString: string) => {
+    if (!dateString) return "";
+    
+    // Pode vir como YYYY-MM-DD ou apenas YYYY
+    const parts = dateString.split("-");
+    if (parts.length === 1) {
+      // Apenas ano
+      return dateString;
+    } else if (parts.length === 3) {
+      // Data completa: YYYY-MM-DD
+      const [year, month, day] = parts;
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      return date.toLocaleDateString("pt-BR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } else {
+      // Formato não reconhecido, retorna como está
+      return dateString;
+    }
+  };
+
+  // Calcula as datas padrão (últimos 7 dias)
+  const getDefaultDates = () => {
+    const today = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+    
+    return {
+      startDate: formatDate(sevenDaysAgo),
+      endDate: formatDate(today),
+    };
+  };
+
+  const defaultDates = getDefaultDates();
+  const [startDate, setStartDate] = useState<string>(defaultDates.startDate);
+  const [endDate, setEndDate] = useState<string>(defaultDates.endDate);
   const [topAlbums, setTopAlbums] = useState<Album[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
@@ -186,8 +231,13 @@ export default function AlbumsPage() {
                           )}
                           <div>
                             <div className="font-medium">{album.album}</div>
+                            {album.releaseDate && (
+                              <div className="text-xs text-slate-500 mt-0.5">
+                                {formatReleaseDate(album.releaseDate)}
+                              </div>
+                            )}
                             {album.albumType && album.albumType !== "single" && (
-                              <div className="text-xs text-slate-500 uppercase">
+                              <div className="text-xs text-slate-500 uppercase mt-0.5">
                                 {album.albumType}
                               </div>
                             )}
@@ -229,7 +279,14 @@ export default function AlbumsPage() {
                                   )
                                   .map(([user, plays]) => {
                                     const userScore = album.userScores[user] || 0;
-                                    const limitedPlays = Math.min(plays, 15);
+                                    // Calcula o número de dias entre as datas
+                                    const daysDiff = startDate && endDate 
+                                      ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
+                                      : 7;
+                                    // Se o período for maior que 7 dias, usa limite de 300
+                                    // Se for 7 dias ou menos, usa o limite padrão de 15
+                                    const limit = daysDiff > 7 ? 300 : 15;
+                                    const limitedPlays = Math.min(plays, limit);
                                     return (
                                       <div
                                         key={user}

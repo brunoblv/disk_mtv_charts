@@ -25,8 +25,28 @@ interface Track {
 }
 
 export default function SongsPage() {
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  // Calcula as datas padrão (últimos 7 dias)
+  const getDefaultDates = () => {
+    const today = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+    
+    return {
+      startDate: formatDate(sevenDaysAgo),
+      endDate: formatDate(today),
+    };
+  };
+
+  const defaultDates = getDefaultDates();
+  const [startDate, setStartDate] = useState<string>(defaultDates.startDate);
+  const [endDate, setEndDate] = useState<string>(defaultDates.endDate);
   const [topTracks, setTopTracks] = useState<Track[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
