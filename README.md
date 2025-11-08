@@ -2,7 +2,19 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+You need a Last.fm API key to use this application. Get one for free at: https://www.last.fm/api/account/create
+
+### Setup
+
+1. Create a `.env.local` file in the root directory (already created as a template)
+2. Add your Last.fm API key to `.env.local`:
+   ```
+   API_KEY=your_actual_api_key_here
+   ```
+
+3. Run the development server:
 
 ```bash
 npm run dev

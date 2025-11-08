@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { Music, Disc3, Home, Mic2 } from "lucide-react";
+import { Music, Disc3, Home, Mic2, TrendingUp } from "lucide-react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
       <body className={geistSans.variable}>
         {/* Navegação */}
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
@@ -67,6 +67,13 @@ export default function RootLayout({
                 >
                   <Mic2 className="w-4 h-4" />
                   <span>Artistas</span>
+                </Link>
+                <Link
+                  href="/top-weighted"
+                  className="flex items-center space-x-2 text-slate-600 hover:text-slate-900 transition-colors"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Ranking Ponderado</span>
                 </Link>
               </div>
             </div>

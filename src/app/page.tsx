@@ -21,7 +21,27 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
+          {/* Card de Músicas Ponderadas */}
+          <Link href="/top-weighted" className="group">
+            <Card className="h-full transition-all duration-300 hover:shadow-xl hover:scale-105 border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center text-2xl text-white">
+                  🏆
+                </div>
+                <CardTitle className="text-2xl text-slate-900">
+                  Top 100 Ponderado
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <CardDescription className="text-slate-600 text-base">
+                  Ranking ponderado das músicas com base nos últimos 7, 15 e 30
+                  dias.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </Link>
+
           {/* Card de Álbuns */}
           <Link href="/albums" className="group">
             <Card className="h-full transition-all duration-300 hover:shadow-xl hover:scale-105 border-0 bg-white/80 backdrop-blur-sm">

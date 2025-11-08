@@ -30,6 +30,13 @@ const USERS = [
 ];
 const MAX_PLAYS_PER_USER = 15;
 
+// Validate API_KEY is set
+if (!API_KEY) {
+  throw new Error(
+    "API_KEY environment variable is not set. Please add it to your .env.local file."
+  );
+}
+
 interface Album {
   artist: {
     "#text": string;
@@ -59,7 +66,7 @@ async function fetchUserWeeklyAlbums(
   to: number
 ): Promise<Album[]> {
   try {
-    const url = `http://ws.audioscrobbler.com/2.0/?method=user.getweeklyalbumchart&user=${username}&api_key=${API_KEY}&from=${from}&to=${to}&format=json`;
+    const url = `https://ws.audioscrobbler.com/2.0/?method=user.getweeklyalbumchart&user=${username}&api_key=${API_KEY}&from=${from}&to=${to}&format=json`;
     const response = await axios.get<LastFmResponse>(url);
     console.log(`from: ${from} to: ${to}`);
 
