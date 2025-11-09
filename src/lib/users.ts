@@ -24,7 +24,6 @@ export const LASTFM_USERS = [
   "Lukitoo",
   "otiagoqz",
   "GabeeTTS",
-  "matttvieira",  
+  "matttvieira",
   "soprani",
 ] as const;
-

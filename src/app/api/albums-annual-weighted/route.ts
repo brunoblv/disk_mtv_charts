@@ -242,13 +242,23 @@ async function fetchUserYearlyAlbums(
     const response = await axios.get<LastFmResponse>(url);
 
     if (!response.data.weeklyalbumchart?.album) {
-      console.warn(`Nenhum álbum encontrado para ${username}`);
+      console.warn(`⚠️ Nenhum álbum encontrado para ${username} (período: ${new Date(from * 1000).toISOString().split('T')[0]} até ${new Date(to * 1000).toISOString().split('T')[0]})`);
       return [];
     }
 
-    return response.data.weeklyalbumchart.album;
-  } catch (error) {
-    console.error(`Erro ao buscar álbuns de ${username}:`, error);
+    const albums = response.data.weeklyalbumchart.album;
+    
+    // Debug específico para matttvieira
+    if (username === "matttvieira") {
+      console.log(`✅ matttvieira: ${albums.length} álbuns retornados pela API`);
+    }
+    
+    return albums;
+  } catch (error: any) {
+    console.error(`❌ Erro ao buscar álbuns de ${username}:`, error.message || error);
+    if (username === "matttvieira") {
+      console.error(`❌ Detalhes do erro para matttvieira:`, error.response?.data || error);
+    }
     return [];
   }
 }
@@ -265,12 +275,25 @@ async function getAnnualWeightedRanking(
   // Para cada usuário, busca os álbuns e atribui pontos baseado na posição
   for (const user of USERS) {
     const albums = await fetchUserYearlyAlbums(user, from, to);
+    
+    // Debug: log para usuários específicos
+    if (user === "matttvieira") {
+      console.log(`🔍 Debug matttvieira: ${albums.length} álbuns encontrados`);
+      if (albums.length > 0) {
+        console.log(`🔍 Debug matttvieira: Primeiros 3 álbuns:`, albums.slice(0, 3).map(a => `${a.artist["#text"]} - ${a.name} (${a.playcount} plays)`));
+      }
+    }
+
+    // Limita aos top 200 de cada usuário
+    const top200Albums = albums.slice(0, 200);
 
     // A lista já vem ordenada por plays, então a posição é baseada na ordem
-    albums.forEach((album, index) => {
-      // Posição começa em 1, pontos: 1º = 100, 2º = 99, 3º = 98, etc.
+    top200Albums.forEach((album, index) => {
+      // Posição começa em 1, pontos: 1º = 200, diminuindo proporcionalmente até 200º = 0
       const position = index + 1;
-      const points = Math.max(0, 101 - position); // 1º = 100, 2º = 99, ..., 100º = 1, 101º+ = 0
+      // Fórmula proporcional: 200 pontos para 1º, 0 pontos para 200º
+      // Usa Math.floor para garantir pontos inteiros
+      const points = Math.max(0, Math.floor((200 * (200 - position)) / 199));
 
       // Normaliza o nome do artista
       let normalizedArtistName = album.artist["#text"];

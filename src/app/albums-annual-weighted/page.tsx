@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import React from "react";
+import { LASTFM_USERS } from "@/lib/users";
 
 interface Album {
   rank: number;
@@ -169,51 +170,40 @@ export default function AlbumsAnnualWeightedPage() {
                             <h4 className="font-medium text-slate-700 mb-3">
                               Pontos e Posições por Usuário
                             </h4>
-                            {Object.keys(album.userPoints).length > 0 ? (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {Object.entries(album.userPoints)
-                                  .filter(([, points]) => points > 0)
-                                  .sort(
-                                    ([, pointsA], [, pointsB]) =>
-                                      pointsB - pointsA
-                                  )
-                                  .map(([user, points]) => {
-                                    const position = album.userPositions[user] || 0;
-                                    return (
-                                      <div
-                                        key={user}
-                                        className="bg-white rounded-lg p-4 border"
-                                      >
-                                        <div className="text-sm font-medium text-slate-600 capitalize mb-2">
-                                          {user}
-                                        </div>
-                                        <div className="space-y-1">
-                                          <div className="flex justify-between items-center">
-                                            <span className="text-xs text-slate-500">
-                                              Posição:
-                                            </span>
-                                            <span className="text-base font-bold text-blue-600">
-                                              #{position}
-                                            </span>
-                                          </div>
-                                          <div className="flex justify-between items-center pt-1 border-t">
-                                            <span className="text-xs text-slate-500">
-                                              Pontos:
-                                            </span>
-                                            <span className="text-base font-bold text-purple-600">
-                                              {points}
-                                            </span>
-                                          </div>
-                                        </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              {LASTFM_USERS.map((user) => {
+                                const points = album.userPoints[user] || 0;
+                                const position = album.userPositions[user] || 0;
+                                return (
+                                  <div
+                                    key={user}
+                                    className="bg-white rounded-lg p-4 border"
+                                  >
+                                    <div className="text-sm font-medium text-slate-600 capitalize mb-2">
+                                      {user}
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="flex justify-between items-center">
+                                        <span className="text-xs text-slate-500">
+                                          Posição:
+                                        </span>
+                                        <span className="text-base font-bold text-blue-600">
+                                          {position > 0 ? `#${position}` : "-"}
+                                        </span>
                                       </div>
-                                    );
-                                  })}
-                              </div>
-                            ) : (
-                              <p className="text-slate-500 text-center py-4">
-                                Nenhum usuário tem este álbum em sua lista
-                              </p>
-                            )}
+                                      <div className="flex justify-between items-center pt-1 border-t">
+                                        <span className="text-xs text-slate-500">
+                                          Pontos:
+                                        </span>
+                                        <span className={`text-base font-bold ${points > 0 ? "text-purple-600" : "text-slate-400"}`}>
+                                          {points}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
