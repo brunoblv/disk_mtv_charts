@@ -284,16 +284,16 @@ async function getAnnualWeightedRanking(
       }
     }
 
-    // Limita aos top 200 de cada usuário
-    const top200Albums = albums.slice(0, 200);
+    // Limita aos top 300 de cada usuário
+    const top300Albums = albums.slice(0, 300);
 
     // A lista já vem ordenada por plays, então a posição é baseada na ordem
-    top200Albums.forEach((album, index) => {
-      // Posição começa em 1, pontos: 1º = 200, diminuindo proporcionalmente até 200º = 0
+    top300Albums.forEach((album, index) => {
+      // Posição começa em 1, pontos: 1º = 300, diminuindo proporcionalmente até 300º = 0
       const position = index + 1;
-      // Fórmula proporcional: 200 pontos para 1º, 0 pontos para 200º
+      // Fórmula proporcional: 300 pontos para 1º, 0 pontos para 300º
       // Usa Math.floor para garantir pontos inteiros
-      const points = Math.max(0, Math.floor((200 * (200 - position)) / 199));
+      const points = Math.max(0, Math.floor((300 * (300 - position)) / 299));
 
       // Normaliza o nome do artista
       let normalizedArtistName = album.artist["#text"];
@@ -364,8 +364,8 @@ async function getAnnualWeightedRanking(
   const hasSpotifyCredentials = SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_SECRET && 
                                 SPOTIFY_CLIENT_ID.length > 0 && SPOTIFY_CLIENT_SECRET.length > 0;
   
-  // Limita aos primeiros 200 para evitar tempos demorados
-  const albumsToCheck = ranking.slice(0, 200);
+  // Verifica os top 300 para filtrar singles (EP e Full Length Album apenas)
+  const albumsToCheck = ranking.slice(0, 300);
   
   if (hasSpotifyCredentials && albumsToCheck.length > 0) {
     console.log(`🎵 Spotify: Verificando tipos de álbuns para top ${albumsToCheck.length} álbuns...`);
