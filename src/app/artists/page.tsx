@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -81,15 +81,17 @@ export default function ArtistsPage() {
     }
   };
 
-  const toggleRow = (index: number) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedRows(newExpanded);
-  };
+  const toggleRow = useCallback((index: number) => {
+    setExpandedRows((prev) => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(index)) {
+        newExpanded.delete(index);
+      } else {
+        newExpanded.add(index);
+      }
+      return newExpanded;
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8 pt-16">
@@ -167,8 +169,8 @@ export default function ArtistsPage() {
               </TableHeader>
               <TableBody>
                 {topArtists.map((artist, index) => (
-                  <React.Fragment key={index}>
-                    <TableRow className="hover:bg-slate-50/50">
+                  <React.Fragment key={`${artist.artist}-${index}`}>
+                    <TableRow>
                       <TableCell>
                         <Button
                           variant="ghost"

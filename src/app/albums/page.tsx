@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -109,14 +109,71 @@ export default function AlbumsPage() {
     }
   };
 
-  const toggleRow = (index: number) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
+  const toggleRow = useCallback((index: number) => {
+    setExpandedRows((prev) => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(index)) {
+        newExpanded.delete(index);
+      } else {
+        newExpanded.add(index);
+      }
+      return newExpanded;
+    });
+  }, []);
+
+  // Calcula o limite uma vez baseado nas datas
+  const daysLimit = useMemo(() => {
+    if (!startDate || !endDate) return 15;
+    const daysDiff = Math.ceil(
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+        (1000 * 60 * 60 * 24)
+    );
+    return daysDiff > 7 ? 300 : 15;
+  }, [startDate, endDate]);
+
+  const handleTopYear = async () => {
+    const currentYear = new Date().getFullYear();
+    const yearStart = `${currentYear}-01-01`;
+    const today = new Date();
+    const yearEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    
+    // Atualiza os estados das datas
+    setStartDate(yearStart);
+    setEndDate(yearEnd);
+    
+    // Faz a busca diretamente com as datas calculadas
+    await handleSearchWithDates(yearStart, yearEnd);
+  };
+
+  const handleSearchWithDates = async (start: string, end: string) => {
+    if (!start || !end) {
+      alert("Por favor, selecione ambas as datas.");
+      return;
     }
-    setExpandedRows(newExpanded);
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/albums?startDate=${start}&endDate=${end}`,
+        {
+          method: "GET",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Erro ao buscar os álbuns");
+      }
+
+      const data = await response.json();
+      const limitedData = data.slice(0, 100);
+
+      setTopAlbums(limitedData);
+    } catch (error) {
+      console.error("Erro ao buscar os álbuns:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -129,6 +186,17 @@ export default function AlbumsPage() {
           <p className="text-lg text-slate-600">
             Ranking dos álbuns mais ouvidos pelos usuários do Disk MTV
           </p>
+        </div>
+
+        {/* Botão Top do Ano */}
+        <div className="mb-6 flex justify-center">
+          <Button
+            onClick={handleTopYear}
+            disabled={isLoading}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold px-8 py-3 text-lg shadow-lg hover:shadow-xl transition-all"
+          >
+            Top {new Date().getFullYear()}
+          </Button>
         </div>
 
         {/* Seletor de datas */}
@@ -193,8 +261,8 @@ export default function AlbumsPage() {
               </TableHeader>
               <TableBody>
                 {topAlbums.map((album, index) => (
-                  <React.Fragment key={index}>
-                    <TableRow className="hover:bg-slate-50/50">
+                  <React.Fragment key={`${album.album}-${index}`}>
+                    <TableRow>
                       <TableCell>
                         <Button
                           variant="ghost"
@@ -279,14 +347,7 @@ export default function AlbumsPage() {
                                   )
                                   .map(([user, plays]) => {
                                     const userScore = album.userScores[user] || 0;
-                                    // Calcula o número de dias entre as datas
-                                    const daysDiff = startDate && endDate 
-                                      ? Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24))
-                                      : 7;
-                                    // Se o período for maior que 7 dias, usa limite de 300
-                                    // Se for 7 dias ou menos, usa o limite padrão de 15
-                                    const limit = daysDiff > 7 ? 300 : 15;
-                                    const limitedPlays = Math.min(plays, limit);
+                                    const limitedPlays = Math.min(plays, daysLimit);
                                     return (
                                       <div
                                         key={user}

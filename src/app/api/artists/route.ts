@@ -1,36 +1,12 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+import { LASTFM_USERS } from "@/lib/users";
 
 const API_KEY = process.env.API_KEY;
 // Aceita ambos os nomes: SPOTIFY_CLIENT_SECRET ou SPOTIFY_SECRET
 const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID?.trim();
 const SPOTIFY_CLIENT_SECRET = (process.env.SPOTIFY_CLIENT_SECRET || process.env.SPOTIFY_SECRET)?.trim();
-const USERS = [
-  "blvbruno",
-  "romisk",
-  "rapha9095",
-  "Matheusygf",
-  "boofrnds",
-  "ohmymog_",
-  "LouLouFM2",
-  "brn_4ever",
-  "alephunk",
-  "okpaulinho",
-  "lucas_SS",
-  "thecrazy_theus",
-  "flow__",
-  "hanamoyou",
-  "thiago-hbm",
-  "thunder__",
-  "Petter_HD",
-  "BriRy",
-  "Lukitoo",
-  "otiagoqz",
-  "GabeeTTS",
-  "matttvieira",
-  "adrenalinedame",
-  "soprani",
-];
+const USERS = LASTFM_USERS;
 const MAX_PLAYS_PER_USER = 20;
 
 // Validate API_KEY is set

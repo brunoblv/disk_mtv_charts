@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Music, Disc3, Home, Mic2, TrendingUp, Menu, X } from "lucide-react";
+import { Music, Disc3, Home, Mic2, TrendingUp, Menu, X, Calendar } from "lucide-react";
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -20,6 +20,7 @@ export default function Navigation() {
     { href: "/albums", icon: Disc3, label: "Álbuns" },
     { href: "/songs", icon: Music, label: "Músicas" },
     { href: "/artists", icon: Mic2, label: "Artistas" },
+    { href: "/albums-annual-weighted", icon: Calendar, label: "Álbum Anual Ponderado" },
     { href: "/top-weighted", icon: TrendingUp, label: "Ranking Ponderado" },
   ];
 

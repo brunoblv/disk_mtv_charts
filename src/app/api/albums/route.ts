@@ -1,36 +1,17 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+import { LASTFM_USERS } from "@/lib/users";
 
 const API_KEY = process.env.API_KEY;
-// Aceita ambos os nomes: SPOTIFY_CLIENT_SECRET ou SPOTIFY_SECRET
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID?.trim();
-const SPOTIFY_CLIENT_SECRET = (process.env.SPOTIFY_CLIENT_SECRET || process.env.SPOTIFY_SECRET)?.trim();
-const USERS = [
-  "blvbruno",
-  "romisk",
-  "rapha9095",
-  "Matheusygf",
-  "boofrnds",
-  "ohmymog_",
-  "LouLouFM2",
-  "brn_4ever",
-  "alephunk",
-  "okpaulinho",
-  "lucas_SS",
-  "thecrazy_theus",
-  "flow__",
-  "renaimusou",
-  "thiago-hbm",
-  "thunder__",
-  "Petter_HD",
-  "BriRy",
-  "Lukitoo",
-  "otiagoqz",
-  "GabeeTTS",
-  "matttvieira",
-  "adrenalinedame",
-  "soprani",
-];
+// Aceita múltiplos nomes para o secret: SPOTIFY_CLIENT_SECRET, SPOTIFY_SECRET, SPOTIFY_CLIENT_SECRET_KEY
+const SPOTIFY_CLIENT_ID_RAW = process.env.SPOTIFY_CLIENT_ID;
+const SPOTIFY_CLIENT_SECRET_RAW = process.env.SPOTIFY_CLIENT_SECRET || 
+                                   process.env.SPOTIFY_SECRET || 
+                                   process.env.SPOTIFY_CLIENT_SECRET_KEY;
+// Remove caracteres especiais invisíveis e espaços
+const SPOTIFY_CLIENT_ID = SPOTIFY_CLIENT_ID_RAW?.replace(/[\u200B-\u200D\uFEFF]/g, '').trim() || undefined;
+const SPOTIFY_CLIENT_SECRET = SPOTIFY_CLIENT_SECRET_RAW?.replace(/[\u200B-\u200D\uFEFF]/g, '').trim() || undefined;
+const USERS = LASTFM_USERS;
 const MAX_PLAYS_PER_USER = 15;
 
 // Validate API_KEY is set
@@ -80,11 +61,16 @@ async function getSpotifyToken(): Promise<string | null> {
   if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET) {
     if (process.env.NODE_ENV === "development") {
       console.warn("⚠️ Credenciais do Spotify não configuradas");
-      console.warn("   Verifique se SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET estão no arquivo .env");
+      console.warn("   Verifique se SPOTIFY_CLIENT_ID e SPOTIFY_CLIENT_SECRET estão no arquivo .env.local");
       console.warn("   Formato esperado:");
       console.warn("   SPOTIFY_CLIENT_ID=seu_client_id_aqui");
       console.warn("   SPOTIFY_CLIENT_SECRET=seu_client_secret_aqui");
       console.warn("   Após adicionar, reinicie o servidor (Ctrl+C e depois npm run dev)");
+      // Debug: mostra o que está sendo lido (sem mostrar os valores reais)
+      console.warn("   Debug - SPOTIFY_CLIENT_ID existe:", !!process.env.SPOTIFY_CLIENT_ID);
+      console.warn("   Debug - SPOTIFY_CLIENT_SECRET existe:", !!(process.env.SPOTIFY_CLIENT_SECRET || process.env.SPOTIFY_SECRET));
+      console.warn("   Debug - SPOTIFY_CLIENT_ID length:", process.env.SPOTIFY_CLIENT_ID?.length || 0);
+      console.warn("   Debug - SPOTIFY_CLIENT_SECRET length:", (process.env.SPOTIFY_CLIENT_SECRET || process.env.SPOTIFY_SECRET)?.length || 0);
     }
     return null;
   }
@@ -178,11 +164,32 @@ async function searchSpotifyAlbum(
     }
 
     // Procura o melhor match (artista e nome do álbum mais próximos)
+    // Prioriza versões não-deluxe para pegar a data de lançamento original
     const normalizedAlbumName = cleanAlbumName.toLowerCase();
     const normalizedArtistName = cleanArtistName.toLowerCase();
     
+    // Palavras-chave que indicam versões especiais/deluxe
+    const deluxeKeywords = [
+      'deluxe', 
+      'remastered', 
+      'expanded', 
+      'anniversary', 
+      'special edition', 
+      'complete edition', 
+      'extended edition',
+      'international special edition version'
+    ];
+    
+    // Função para verificar se é versão deluxe/especial
+    const isDeluxeVersion = (albumName: string): boolean => {
+      const nameLower = albumName.toLowerCase();
+      return deluxeKeywords.some(keyword => nameLower.includes(keyword));
+    };
+    
     let bestMatch = albums[0];
     let bestScore = 0;
+    let bestNonDeluxeMatch: any = null;
+    let bestNonDeluxeScore = 0;
 
     for (const album of albums) {
       const albumArtistName = album.artists?.[0]?.name?.toLowerCase() || "";
@@ -200,6 +207,13 @@ async function searchSpotifyAlbum(
       if (artistMatch) score += 2;
       if (albumMatch) score += 2;
       
+      // Prioriza versões não-deluxe
+      const isDeluxe = isDeluxeVersion(album.name);
+      if (!isDeluxe && score > bestNonDeluxeScore) {
+        bestNonDeluxeScore = score;
+        bestNonDeluxeMatch = album;
+      }
+      
       if (score > bestScore) {
         bestScore = score;
         bestMatch = album;
@@ -211,9 +225,15 @@ async function searchSpotifyAlbum(
       return { found: false };
     }
 
-    const albumType = bestMatch.album_type as "album" | "ep" | "single";
-    const coverImage = bestMatch.images?.[0]?.url || bestMatch.images?.[1]?.url;
-    const releaseDate = bestMatch.release_date; // Formato: YYYY-MM-DD ou YYYY
+    // Usa a versão não-deluxe se disponível, senão usa a melhor match
+    const finalMatch = bestNonDeluxeMatch || bestMatch;
+    const albumType = finalMatch.album_type as "album" | "ep" | "single";
+    const coverImage = finalMatch.images?.[0]?.url || finalMatch.images?.[1]?.url;
+    
+    // Só pega a data de lançamento se não for versão deluxe
+    // Se só encontrou versão deluxe, não retorna a data
+    const isFinalDeluxe = isDeluxeVersion(finalMatch.name);
+    const releaseDate = !isFinalDeluxe ? finalMatch.release_date : undefined;
 
     return {
       coverImage: coverImage,
@@ -442,8 +462,9 @@ async function getCombinedRanking(
   const spotifyInfoMap = new Map<string, SpotifyAlbumInfo>();
   const top100Albums = ranking.slice(0, 100);
 
-  // Só busca no Spotify se tiver credenciais configuradas
-  const hasSpotifyCredentials = !!SPOTIFY_CLIENT_ID && !!SPOTIFY_CLIENT_SECRET;
+  // Só busca no Spotify se tiver credenciais configuradas (não undefined e não string vazia)
+  const hasSpotifyCredentials = SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_SECRET && 
+                                SPOTIFY_CLIENT_ID.length > 0 && SPOTIFY_CLIENT_SECRET.length > 0;
   
   if (hasSpotifyCredentials && top100Albums.length > 0) {
     console.log(`🎵 Spotify: Buscando capas para top ${top100Albums.length} álbuns...`);
@@ -477,6 +498,20 @@ async function getCombinedRanking(
   } else {
     if (!hasSpotifyCredentials) {
       console.log("⚠️ Spotify: Credenciais não configuradas (SPOTIFY_CLIENT_ID/SPOTIFY_CLIENT_SECRET)");
+      console.log("   Verifique se as variáveis estão no arquivo .env.local na raiz do projeto");
+      console.log("   Formato: SPOTIFY_CLIENT_ID=seu_id");
+      console.log("   Formato: SPOTIFY_CLIENT_SECRET=seu_secret");
+      console.log("   Após adicionar, REINICIE o servidor Next.js");
+      // Debug detalhado
+      console.log("   Debug - SPOTIFY_CLIENT_ID_RAW:", SPOTIFY_CLIENT_ID_RAW ? `existe (${SPOTIFY_CLIENT_ID_RAW.length} chars)` : "não existe");
+      console.log("   Debug - SPOTIFY_CLIENT_SECRET_RAW:", SPOTIFY_CLIENT_SECRET_RAW ? `existe (${SPOTIFY_CLIENT_SECRET_RAW.length} chars)` : "não existe");
+      console.log("   Debug - process.env.SPOTIFY_CLIENT_SECRET:", process.env.SPOTIFY_CLIENT_SECRET ? `existe (${process.env.SPOTIFY_CLIENT_SECRET.length} chars)` : "não existe");
+      console.log("   Debug - process.env.SPOTIFY_SECRET:", process.env.SPOTIFY_SECRET ? `existe (${process.env.SPOTIFY_SECRET.length} chars)` : "não existe");
+      console.log("   Debug - SPOTIFY_CLIENT_ID (após limpeza):", SPOTIFY_CLIENT_ID ? `existe (${SPOTIFY_CLIENT_ID.length} chars)` : "não existe");
+      console.log("   Debug - SPOTIFY_CLIENT_SECRET (após limpeza):", SPOTIFY_CLIENT_SECRET ? `existe (${SPOTIFY_CLIENT_SECRET.length} chars)` : "não existe");
+      console.log("   💡 Dica: Verifique se o nome da variável no .env.local está exatamente: SPOTIFY_CLIENT_SECRET");
+      console.log("   💡 Dica: Remova qualquer caractere especial ou símbolo estranho do arquivo .env.local");
+      console.log("   💡 Dica: Certifique-se de que não há espaços antes ou depois do sinal de =");
     }
   }
 

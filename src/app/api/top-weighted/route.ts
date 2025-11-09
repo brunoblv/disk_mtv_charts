@@ -1,33 +1,9 @@
 import { NextResponse } from "next/server";
 import axios from "axios";
+import { LASTFM_USERS } from "@/lib/users";
 
 const API_KEY = process.env.API_KEY;
-const USERS = [
-  "blvbruno",
-  "romisk",
-  "rapha9095",
-  "Matheusygf",
-  "boofrnds",
-  "ohmymog_",
-  "LouLouFM2",
-  "brn_4ever",
-  "alephunk",
-  "okpaulinho",
-  "lucas_SS",
-  "thecrazy_theus",
-  "flow__",
-  "renaimusou",
-  "thiago-hbm",
-  "thunder__",
-  "Petter_HD",
-  "BriRy",
-  "Lukitoo",
-  "otiagoqz",
-  "GabeeTTS",
-  "matttvieira",
-  "adrenalinedame",
-  "soprani",
-];
+const USERS = LASTFM_USERS;
 // No limit for individual user rankings - we want to show all plays
 const MAX_PLAYS_PER_USER = 999999;
 

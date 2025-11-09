@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { ChevronDown, ChevronRight, TrendingUp, RefreshCw } from "lucide-react";
 import React from "react";
+import { LASTFM_USERS } from "@/lib/users";
 
 interface Track {
   rank: number;
@@ -27,32 +28,7 @@ interface Track {
   userPlays: { [key: string]: number };
 }
 
-const USERS = [
-  "blvbruno",
-  "romisk",
-  "rapha9095",
-  "Matheusygf",
-  "boofrnds",
-  "ohmymog_",
-  "LouLouFM2",
-  "brn_4ever",
-  "alephunk",
-  "okpaulinho",
-  "lucas_SS",
-  "thecrazy_theus",
-  "flow__",
-  "renaimusou",
-  "thiago-hbm",
-  "thunder__",
-  "Petter_HD",
-  "BriRy",
-  "Lukitoo",
-  "otiagoqz",
-  "GabeeTTS",
-  "matttvieira",
-  "adrenalinedame",
-  "soprani",
-];
+const USERS = LASTFM_USERS;
 
 export default function TopWeightedPage() {
   const [topTracks, setTopTracks] = useState<Track[] | null>(null);
@@ -93,15 +69,17 @@ export default function TopWeightedPage() {
     }
   };
 
-  const toggleRow = (index: number) => {
-    const newExpanded = new Set(expandedRows);
-    if (newExpanded.has(index)) {
-      newExpanded.delete(index);
-    } else {
-      newExpanded.add(index);
-    }
-    setExpandedRows(newExpanded);
-  };
+  const toggleRow = useCallback((index: number) => {
+    setExpandedRows((prev) => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(index)) {
+        newExpanded.delete(index);
+      } else {
+        newExpanded.add(index);
+      }
+      return newExpanded;
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8 pt-16">
@@ -207,8 +185,8 @@ export default function TopWeightedPage() {
               </TableHeader>
               <TableBody>
                 {topTracks.map((track, index) => (
-                  <React.Fragment key={index}>
-                    <TableRow className="hover:bg-slate-50/50">
+                  <React.Fragment key={`${track.song}-${index}`}>
+                    <TableRow>
                       <TableCell>
                         <Button
                           variant="ghost"
