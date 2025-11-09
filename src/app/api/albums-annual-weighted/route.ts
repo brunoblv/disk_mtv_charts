@@ -43,10 +43,12 @@ interface AlbumWithUserData {
   userPoints: { [key: string]: number };
   userPositions: { [key: string]: number };
   normalizedKey: string;
+  releaseDate?: string; // Ano de lançamento
 }
 
 interface SpotifyAlbumInfo {
   albumType?: "album" | "ep" | "single";
+  releaseDate?: string; // Data de lançamento (formato: YYYY-MM-DD ou YYYY)
   found: boolean;
 }
 
@@ -213,9 +215,11 @@ async function searchSpotifyAlbum(
     }
 
     const albumType = bestMatch.album_type as "album" | "ep" | "single";
+    const releaseDate = bestMatch.release_date; // Formato: YYYY-MM-DD ou YYYY
 
     return {
       albumType,
+      releaseDate,
       found: true,
     };
   } catch (error: any) {
@@ -412,14 +416,23 @@ async function getAnnualWeightedRanking(
       return spotifyInfo.albumType !== "single";
     })
     .slice(0, 200) // Limita aos primeiros 200 álbuns
-    .map((item, index) => ({
-      rank: index + 1,
-      album: item.album,
-      totalPoints: item.totalPoints,
-      userPoints: item.userPoints,
-      userPositions: item.userPositions,
-      normalizedKey: item.normalizedKey,
-    }));
+    .map((item, index) => {
+      const spotifyInfo = spotifyInfoMap.get(item.normalizedKey);
+      // Extrai o ano da data de lançamento (formato pode ser YYYY-MM-DD ou YYYY)
+      const releaseYear = spotifyInfo?.releaseDate 
+        ? spotifyInfo.releaseDate.split('-')[0] 
+        : undefined;
+      
+      return {
+        rank: index + 1,
+        album: item.album,
+        totalPoints: item.totalPoints,
+        userPoints: item.userPoints,
+        userPositions: item.userPositions,
+        normalizedKey: item.normalizedKey,
+        releaseDate: releaseYear,
+      };
+    });
 
   return finalRanking;
 }

@@ -20,6 +20,7 @@ interface Album {
   totalPoints: number;
   userPoints: { [key: string]: number };
   userPositions: { [key: string]: number };
+  releaseDate?: string; // Ano de lançamento
 }
 
 export default function AlbumsAnnualWeightedPage() {
@@ -156,7 +157,14 @@ export default function AlbumsAnnualWeightedPage() {
                         {album.rank}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {album.album}
+                        <div className="flex items-center gap-2">
+                          <span>{album.album}</span>
+                          {album.releaseDate && (
+                            <span className="text-sm text-slate-500 font-normal">
+                              ({album.releaseDate})
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center font-semibold text-purple-600">
                         {album.totalPoints.toLocaleString()}
