@@ -76,7 +76,7 @@ export default function AlbumsAnnualWeightedPage() {
             Álbum Anual Ponderado
           </h1>
           <p className="text-lg text-slate-600">
-            Ranking de álbuns baseado na posição nas listas dos usuários (100 pontos para 1º lugar, 99 para 2º, etc.)
+            Ranking de álbuns baseado na porcentagem de plays dos top 300 álbuns de cada usuário
           </p>
         </div>
 

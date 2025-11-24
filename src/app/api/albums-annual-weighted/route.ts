@@ -239,11 +239,17 @@ async function searchSpotifyAlbum(
 async function fetchUserYearlyAlbums(
   username: string,
   from: number,
-  to: number
+  to: number,
+  retryCount = 0
 ): Promise<Album[]> {
+  const maxRetries = 3;
+  const retryDelay = 1000; // 1 segundo base, aumenta exponencialmente
+
   try {
     const url = `https://ws.audioscrobbler.com/2.0/?method=user.getweeklyalbumchart&user=${username}&api_key=${API_KEY}&from=${from}&to=${to}&format=json`;
-    const response = await axios.get<LastFmResponse>(url);
+    const response = await axios.get<LastFmResponse>(url, {
+      timeout: 30000, // 30 segundos de timeout
+    });
 
     if (!response.data.weeklyalbumchart?.album) {
       console.warn(`⚠️ Nenhum álbum encontrado para ${username} (período: ${new Date(from * 1000).toISOString().split('T')[0]} até ${new Date(to * 1000).toISOString().split('T')[0]})`);
@@ -252,16 +258,33 @@ async function fetchUserYearlyAlbums(
 
     const albums = response.data.weeklyalbumchart.album;
     
-    // Debug específico para matttvieira
-    if (username === "matttvieira") {
-      console.log(`✅ matttvieira: ${albums.length} álbuns retornados pela API`);
+    // Verifica se albums é um array
+    if (!Array.isArray(albums)) {
+      console.warn(`⚠️ Resposta inválida para ${username}: albums não é um array`);
+      return [];
     }
+    
+    console.log(`✅ ${username}: ${albums.length} álbuns retornados pela API`);
     
     return albums;
   } catch (error: any) {
+    // Se for erro de timeout ou rate limit, tenta novamente
+    if (
+      (error.code === 'ECONNABORTED' || 
+       error.response?.status === 429 || 
+       error.response?.status === 503 ||
+       (error.response?.status >= 500 && error.response?.status < 600)) &&
+      retryCount < maxRetries
+    ) {
+      const delay = retryDelay * Math.pow(2, retryCount);
+      console.warn(`⚠️ Erro temporário ao buscar álbuns de ${username} (tentativa ${retryCount + 1}/${maxRetries}). Tentando novamente em ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchUserYearlyAlbums(username, from, to, retryCount + 1);
+    }
+    
     console.error(`❌ Erro ao buscar álbuns de ${username}:`, error.message || error);
-    if (username === "matttvieira") {
-      console.error(`❌ Detalhes do erro para matttvieira:`, error.response?.data || error);
+    if (error.response) {
+      console.error(`❌ Status: ${error.response.status}, Data:`, error.response.data);
     }
     return [];
   }
@@ -275,81 +298,132 @@ async function getAnnualWeightedRanking(
   const userPoints = new Map<string, { [key: string]: number }>();
   const userPositions = new Map<string, { [key: string]: number }>();
   const albumDisplayNames = new Map<string, string>();
+  const processedUsers = new Set<string>();
+  const failedUsers: string[] = [];
 
-  // Para cada usuário, busca os álbuns e atribui pontos baseado na posição
-  for (const user of USERS) {
-    const albums = await fetchUserYearlyAlbums(user, from, to);
+  console.log(`📊 Processando ${USERS.length} usuários...`);
+
+  // Para cada usuário, busca os álbuns e atribui pontos baseado na porcentagem de plays
+  for (let i = 0; i < USERS.length; i++) {
+    const user = USERS[i];
+    console.log(`🔄 Processando usuário ${i + 1}/${USERS.length}: ${user}`);
     
-    // Debug: log para usuários específicos
-    if (user === "matttvieira") {
-      console.log(`🔍 Debug matttvieira: ${albums.length} álbuns encontrados`);
-      if (albums.length > 0) {
-        console.log(`🔍 Debug matttvieira: Primeiros 3 álbuns:`, albums.slice(0, 3).map(a => `${a.artist["#text"]} - ${a.name} (${a.playcount} plays)`));
-      }
-    }
-
-    // Limita aos top 300 de cada usuário
-    const top300Albums = albums.slice(0, 300);
-
-    // A lista já vem ordenada por plays, então a posição é baseada na ordem
-    top300Albums.forEach((album, index) => {
-      // Posição começa em 1, pontos: 1º = 300, diminuindo proporcionalmente até 300º = 0
-      const position = index + 1;
-      // Fórmula proporcional: 300 pontos para 1º, 0 pontos para 300º
-      // Usa Math.floor para garantir pontos inteiros
-      const points = Math.max(0, Math.floor((300 * (300 - position)) / 299));
-
-      // Normaliza o nome do artista
-      let normalizedArtistName = album.artist["#text"];
-      if (normalizedArtistName.toLowerCase() === "rose gray") {
-        normalizedArtistName = "Rose Grey";
-      }
-
-      // Normaliza o nome do álbum
-      const normalizedAlbumName = normalizeAlbumName(
-        album.name,
-        normalizedArtistName
-      );
-
-      const normalizedKey = `${normalizedArtistName.toLowerCase()} - ${normalizedAlbumName.toLowerCase()}`;
-      const displayName = `${normalizedArtistName} - ${normalizedAlbumName}`;
-
-      // Inicializa se não existir
-      if (!userPoints.has(normalizedKey)) {
-        userPoints.set(normalizedKey, {});
-        userPositions.set(normalizedKey, {});
-        albumDisplayNames.set(normalizedKey, displayName);
-      }
-
-      // Soma os pontos (se o usuário já tiver pontos deste álbum, usa a melhor posição)
-      const currentUserPoints = userPoints.get(normalizedKey)!;
-      const currentUserPositions = userPositions.get(normalizedKey)!;
+    try {
+      const albums = await fetchUserYearlyAlbums(user, from, to);
       
-      // Se o usuário já tem pontos deste álbum, usa a melhor posição (menor número = mais pontos)
-      if (currentUserPoints[user]) {
-        // Se a nova posição for melhor (menor), atualiza
-        if (position < currentUserPositions[user]) {
+      // Verifica se recebeu dados válidos
+      if (!Array.isArray(albums)) {
+        console.error(`❌ ${user}: Resposta inválida - albums não é um array`);
+        failedUsers.push(user);
+        continue;
+      }
+
+      processedUsers.add(user);
+      console.log(`✅ ${user}: ${albums.length} álbuns encontrados`);
+
+      // Limita aos top 300 de cada usuário
+      const top300Albums = albums.slice(0, 300);
+      
+      if (top300Albums.length === 0) {
+        console.warn(`⚠️ ${user}: Nenhum álbum no top 300`);
+        continue;
+      }
+
+      // Calcula o total de plays dos top 300 álbuns deste usuário
+      const totalPlays = top300Albums.reduce((sum, album) => {
+        const plays = parseInt(album.playcount, 10) || 0;
+        return sum + plays;
+      }, 0);
+
+      if (totalPlays === 0) {
+        console.warn(`⚠️ ${user}: Total de plays é zero, pulando...`);
+        continue;
+      }
+
+      console.log(`📊 ${user}: Total de ${totalPlays.toLocaleString()} plays nos top 300 álbuns`);
+
+      // Para cada álbum, calcula a porcentagem que representa do total
+      top300Albums.forEach((album, index) => {
+        const position = index + 1;
+        const albumPlays = parseInt(album.playcount, 10) || 0;
+        
+        // Calcula a porcentagem: (plays do álbum / total de plays) * 100
+        // Multiplica por 100 e arredonda para cima para ter pontos inteiros
+        const percentage = (albumPlays / totalPlays) * 100;
+        const points = Math.ceil(percentage * 100);
+
+        // Normaliza o nome do artista
+        let normalizedArtistName = album.artist["#text"];
+        if (normalizedArtistName.toLowerCase() === "rose gray") {
+          normalizedArtistName = "Rose Grey";
+        }
+
+        // Normaliza o nome do álbum
+        const normalizedAlbumName = normalizeAlbumName(
+          album.name,
+          normalizedArtistName
+        );
+
+        const normalizedKey = `${normalizedArtistName.toLowerCase()} - ${normalizedAlbumName.toLowerCase()}`;
+        const displayName = `${normalizedArtistName} - ${normalizedAlbumName}`;
+
+        // Inicializa se não existir
+        if (!userPoints.has(normalizedKey)) {
+          userPoints.set(normalizedKey, {});
+          userPositions.set(normalizedKey, {});
+          albumDisplayNames.set(normalizedKey, displayName);
+        }
+
+        // Soma os pontos (se o usuário já tiver pontos deste álbum, soma as porcentagens)
+        const currentUserPoints = userPoints.get(normalizedKey)!;
+        const currentUserPositions = userPositions.get(normalizedKey)!;
+        
+        // Se o usuário já tem pontos deste álbum, soma os pontos
+        if (currentUserPoints[user]) {
+          // Soma os novos pontos aos existentes
           const oldPoints = currentUserPoints[user];
-          const newPoints = points;
+          const newPoints = oldPoints + points;
           currentUserPoints[user] = newPoints;
-          currentUserPositions[user] = position;
+          // Mantém a melhor posição (menor número)
+          if (!currentUserPositions[user] || position < currentUserPositions[user]) {
+            currentUserPositions[user] = position;
+          }
           // Atualiza o total
           albumPoints.set(
             normalizedKey,
             (albumPoints.get(normalizedKey) || 0) - oldPoints + newPoints
           );
+        } else {
+          // Primeira vez que o usuário aparece com este álbum
+          currentUserPoints[user] = points;
+          currentUserPositions[user] = position;
+          albumPoints.set(
+            normalizedKey,
+            (albumPoints.get(normalizedKey) || 0) + points
+          );
         }
-        // Se a posição for pior ou igual, mantém a anterior (não faz nada)
-      } else {
-        // Primeira vez que o usuário aparece com este álbum
-        currentUserPoints[user] = points;
-        currentUserPositions[user] = position;
-        albumPoints.set(
-          normalizedKey,
-          (albumPoints.get(normalizedKey) || 0) + points
-        );
+      });
+      
+      // Adiciona um pequeno delay entre requisições para evitar rate limiting
+      if (i < USERS.length - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
-    });
+    } catch (error: any) {
+      console.error(`❌ Erro ao processar usuário ${user}:`, error.message || error);
+      failedUsers.push(user);
+    }
+  }
+  
+  // Log final do processamento
+  console.log(`\n📊 Resumo do processamento:`);
+  console.log(`✅ Usuários processados com sucesso: ${processedUsers.size}/${USERS.length}`);
+  if (failedUsers.length > 0) {
+    console.warn(`⚠️ Usuários com falha: ${failedUsers.join(', ')}`);
+  }
+  
+  // Verifica se todos os usuários foram processados
+  if (processedUsers.size < USERS.length) {
+    console.warn(`⚠️ ATENÇÃO: Apenas ${processedUsers.size} de ${USERS.length} usuários foram processados com sucesso!`);
   }
 
   // Cria o ranking ordenado por pontos
