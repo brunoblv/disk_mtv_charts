@@ -427,14 +427,27 @@ async function getAnnualWeightedRanking(
   }
 
   // Cria o ranking ordenado por pontos
+  // Adiciona 50 pontos para cada ouvinte (usuário) que tem o álbum
   const ranking = Array.from(albumPoints.entries())
-    .map(([normalizedKey, totalPoints]) => ({
-      album: albumDisplayNames.get(normalizedKey) || normalizedKey,
-      normalizedKey,
-      totalPoints,
-      userPoints: userPoints.get(normalizedKey) || {},
-      userPositions: userPositions.get(normalizedKey) || {},
-    }))
+    .map(([normalizedKey, totalPoints]) => {
+      const albumUserPoints = userPoints.get(normalizedKey) || {};
+      // Conta quantos usuários têm pontos neste álbum (ouvintes)
+      const listenersCount = Object.keys(albumUserPoints).filter(
+        user => albumUserPoints[user] > 0
+      ).length;
+      
+      // Adiciona 50 pontos por ouvinte
+      const listenersBonus = listenersCount * 50;
+      const finalPoints = totalPoints + listenersBonus;
+      
+      return {
+        album: albumDisplayNames.get(normalizedKey) || normalizedKey,
+        normalizedKey,
+        totalPoints: finalPoints,
+        userPoints: albumUserPoints,
+        userPositions: userPositions.get(normalizedKey) || {},
+      };
+    })
     .sort((a, b) => b.totalPoints - a.totalPoints);
 
   // Busca informações do Spotify para filtrar singles
